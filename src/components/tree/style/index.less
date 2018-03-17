@@ -1,13 +1,28 @@
-@import "../../../style/themes/default";
-@import "../../../style/mixins/index";
-@import "../../checkbox/style/mixin";
-@import "./mixin";
-
+//@import "../../../style/themes/default";
+//@import "../../../style/mixins/index";
+//@import "../../checkbox/style/mixin";
+//@import "./mixin";
+@ant-prefix:"yb";
+@text-color-secondary:blue;
 @tree-prefix-cls: ~"@{ant-prefix}-tree";
 @tree-showline-icon-color: @text-color-secondary;
+@text-color:black;
+@font-size-base:14px;
+@primary-color:transparent;
+@highlight-color:black;
+@border-radius-sm:5px;
+@item-hover-bg:red;
+@primary-2:transparent;
+@component-background:transparent;
+@disabled-color:yellow;
+//.antCheckboxFn(@checkbox-prefix-cls: ~"@{ant-prefix}-tree-checkbox");
+.iconfont-font(@fontsize){
 
-.antCheckboxFn(@checkbox-prefix-cls: ~"@{ant-prefix}-tree-checkbox");
+}
+.antTreeSwitcherIcon(){
 
+}
+.ie-rotate(@size){}
 .@{tree-prefix-cls} {
   margin: 0;
   padding: 0;
@@ -163,36 +178,5 @@
     margin-right: 2px;
     vertical-align: top;
   }
-  // Tree with line
-  &&-show-line {
-    li {
-      position: relative;
-      span {
-        &.@{tree-prefix-cls}-switcher {
-          background: @component-background;
-          color: @text-color;
-          &.@{tree-prefix-cls}-switcher-noop {
-            .antTreeShowLineIcon("tree-doc-icon");
-          }
-          &.@{tree-prefix-cls}-switcher_open {
-            color: @tree-showline-icon-color;
-            .antTreeShowLineIcon("tree-showline-open-icon");
-          }
-          &.@{tree-prefix-cls}-switcher_close {
-            color: @tree-showline-icon-color;
-            .antTreeShowLineIcon("tree-showline-close-icon");
-          }
-        }
-      }
-    }
-    li:not(:last-child):before {
-      content: ' ';
-      width: 1px;
-      border-left: 1px solid @border-color-base;
-      height: 100%;
-      position: absolute;
-      left: 12px;
-      margin: 22px 0;
-    }
-  }
+
 }

@@ -1,16 +1,25 @@
 <template>
   <ul :class="treeCls">
-    <li v-for="(item, index) in data" :class="{[`${prefixCls}-treenode-disabled`]: item.disabled,[dropOverCls]: dragOverIndex === index,'filter-node': item.filter}" @dragover="dragover" @drop="drop(index,$event)" @dragenter="dragenter(index,$event)" @dragleave="dragleave(index,$event)" ref="node">
+    <li v-for="(item, index) in data" :class="{[`${prefixCls}-treenode-disabled`]: item.disabled,[dropOverCls]: dragOverIndex === index}" @dragover="dragover" @drop="drop(index,$event)" @dragenter="dragenter(index,$event)" @dragleave="dragleave(index,$event)" ref="node">
       <span :class="[`${prefixCls}-switcher`,{[`${prefixCls}-switcher-disabled`]: item.disabled,[`${prefixCls}-switcher-noop`]: item.isLeaf,[`${prefixCls}-switcher_${item.expanded ? 'open' : 'close'}`]: !item.isLeaf}]" @click="setExpand(item.disabled, index)"></span>
-      <span v-if="checkable" :class="checkboxCls(item)" @click.prevent="setCheck(item.disabled || item.disableCheckbox, index)">
-        <span :class="prefixCls + '-checkbox-inner'"></span>
+
+      <span :class="prefixCls + 'node-icon' + prefixIcon">
+          prefixIcon
       </span>
-      <span :title="item.title" :class="selectHandleCls(item)" @click.prevent="setSelect(item.disabled, index)" :draggable="draggable" @dragstart="dragstart(index,$event)" @dragend="dragend">
-        <span :class="`${prefixCls}-iconEle ${prefixCls}-icon_loading ${prefixCls}-icon__open`" v-if="item.loading"></span>
-        <span :class="prefixCls + '-title'" v-html="item.title"></span>
+
+      <span :title="item.title" :class="selectHandleCls(item)" @click.prevent="setSelect(item.disabled, index)" :draggable="draggable" @dragstart="dragstart(index,$event)" @dragend="dragend"
+            v-on:dblclick="setEdit(item.disabled, index)">
+        <input type="text" v-model="item.text"  v-if="item.edited" @click.enter="completeEdit(item.disabled, index)"/>
+        <span :class="prefixCls + '-title'" v-html="item.title" v-else></span>
       </span>
-      <transition name="slide-up">
-        <tree v-if="!item.isLeaf" :prefix-cls="prefixCls" :data="item.children" :clue="`${clue}-${index}`" :multiple="multiple" :checkable="checkable" :class="`${prefixCls}-child-tree-open`" v-show="item.expanded" :draggable="draggable" :async="async"></tree>
+
+      <span :class="prefixCls + 'node-icon' + suffixIcon">
+        <!--<span :class="prefixCls + '-checkbox-inner'"></span>prefix-->
+        suffixIcon
+      </span>
+
+      <transition>
+        <tree v-if="!item.isLeaf" :prefix-cls="prefixCls" :data="item.children" :clue="`${clue}-${index}`" :checkable="checkable" :class="`${prefixCls}-child-tree-open`" v-show="item.expanded" :draggable="draggable" :async="async"></tree>
       </transition>
     </li>
   </ul>
@@ -23,9 +32,19 @@ export default {
     name: 'Tree',
     mixins: [emitter],
     props: {
+      //节点的图标
+      prefixIcon:{
+        type:String ,
+        default:''
+      },
+      suffixIcon:{
+        type:String ,
+        default:''
+      },
+
         prefixCls: {
             type: String,
-            default: 'ant-tree',
+            default: 'yb-tree',
         },
         clue: {
             type: String,
@@ -35,14 +54,6 @@ export default {
             type: Array,
             default: () => [],
         },
-        multiple: {
-            type: Boolean,
-            default: false,
-        },
-        checkable: {
-            type: Boolean,
-            default: false,
-        },
         draggable: {
             type: Boolean,
             default: false,
@@ -51,11 +62,6 @@ export default {
             type: Function,
             default: () => true,
         },
-        showLine: {
-            type: Boolean,
-            default: false,
-        },
-        async: Function,
     },
     data: () => ({
         dragIndex: -1,
@@ -65,15 +71,8 @@ export default {
     }),
     computed: {
         treeCls() {
-            if (this.clue === '0') {
-                return [
-                    this.prefixCls,
-                    { [`${this.prefixCls}-show-line`]: this.showLine },
-                ];
-            }
             return [
-                `${this.prefixCls}-child-tree`,
-                { [`${this.prefixCls}-line`]: this.showLine },
+                `${this.prefixCls}-child-tree`
             ];
         },
         dropOverCls() {
@@ -105,7 +104,7 @@ export default {
 
         this.$on('nodeSelected', (params) => {
             if (this.clue !== '0') return this.dispatch('Tree', 'nodeSelected', params);
-            if (!this.multiple && params.status) {
+            if (params.status) {
                 if (this !== params.origin) {
                     for (let i = 0; i < this.data.length; i++) {
                         this.$set(this.data[i], 'selected', false);
@@ -126,45 +125,17 @@ export default {
             }
         });
 
-        this.$on('parentChecked', (params) => {
-            if (this.clue === params.clue || this.clue.startsWith(`${params.clue}-`)) {
-                for (let i = 0; i < this.data.length; i++) {
-                    this.$set(this.data[i], 'checked', params.status);
-                    this.$set(this.data[i], 'childrenCheckedStatus', params.status ? 2 : 0);
-                }
-                this.broadcast('Tree', 'parentChecked', params);
-            }
-        });
-
-        this.$on('childChecked', (params) => {
-            if (this.clue === '0') {
-                this.$nextTick(() => {
-                    this.$emit('check', this.getCheckedNodes());
-                });
-            }
-            if (this === params.origin) return;
-
-            for (const [i, item] of this.data.entries()) {
-                if (`${this.clue}-${i}` === params.clue) {
-                    const temp = this.getChildrenCheckedStatus(item.children);
-
-                    if (temp !== item.childrenCheckedStatus) {
-                        this.$set(this.data[i], 'checked', !!temp);
-                        this.$set(this.data[i], 'childrenCheckedStatus', temp);
-                    }
-
-                    if (this.clue !== '0') {
-                        this.dispatch('Tree', 'childChecked', { origin: this, clue: this.clue });
-                    }
-                }
-            }
-        });
+        //0-1-2-1-2
+      //0-2-1
         this.$on('dragdrop', (sourceClue, targetClue, dropPosition) => {
             if (this.clue !== '0') return this.dispatch('Tree', 'dragdrop', [sourceClue, targetClue, dropPosition]);
             // 直接父级是否是同一个
+          //but not including indexEnd
+          //0-1- , 0-2-
             const sameTree = sourceClue.substr(0, sourceClue.length - 1) === targetClue.substr(0, targetClue.length - 1);
-            sourceClue = sourceClue.split('-');
+            sourceClue = sourceClue.split('-');//[0,2,1]
             let sourceData = this.data;
+            //获取drag的data
             let _sourceData;
             let lastSourceIndex = sourceClue[sourceClue.length - 1] * 1;
             for (let i = 1; i < sourceClue.length - 1; i++) {
@@ -202,6 +173,7 @@ export default {
             if (!canDrop) return;
 
             let sourcePositionChange = false;
+//          dropPosition的值有-1(插入到目标节点前面),0(插入到目标节点里面),1(插入到目标节点后面)
             switch (dropPosition) {
                 case 0:
                     if (targetClue.length > 2) {
@@ -216,6 +188,7 @@ export default {
                     }
                     break;
                 case 1:
+                case -1:
                     const p = targetIndex + (dropPosition === -1 ? 0 : dropPosition);
                     if (targetClue.length > 2) {
                         targetData.children.splice(p, 0, _sourceData);
@@ -224,7 +197,7 @@ export default {
                     }
                     sourcePositionChange = sameTree && p <= lastSourceIndex;
                     break;
-                case -1:
+//                case -1:
                 default:
             }
 
@@ -241,6 +214,19 @@ export default {
         });
     },
     methods: {
+      setEdit(disabled, index){
+        if (!disabled) {
+          const edited = !this.data[index].edited;
+          this.$set(this.data[index], 'edited', edited);
+        }
+      },
+      completeEdit(disabled, index){
+        if (!disabled) {
+          const edited = !this.data[index].edited;
+          this.$set(this.data[index], 'edited', edited);
+        }
+      },
+
         dragstart(index, ev) {
             ev.stopPropagation();
             this.dragIndex = index;
@@ -335,41 +321,23 @@ export default {
             for (const [i, item] of this.data.entries()) {
                 if (!item.children) {
                     this.$set(item, 'isLeaf', true);
-                    this.$set(item, 'childrenCheckedStatus', 2);
                     continue;
                 }
 
                 this.$set(item, 'isLeaf', false);
-                if (item.checked && !item.childrenCheckedStatus) {
-                    this.$set(item, 'childrenCheckedStatus', 2);
-                    this.broadcast('Tree', 'parentChecked', { status: true, clue: `${this.clue}-${i}` });
-                } else {
-                    const status = this.getChildrenCheckedStatus(item.children);
-                    this.$set(item, 'childrenCheckedStatus', status);
-
-                    if (status !== 0) {
-                        this.$set(item, 'checked', true);
-                    }
-                }
             }
         },
         async setExpand(disabled, index) {
             if (!disabled) {
                 const expanded = !this.data[index].expanded;
                 this.$set(this.data[index], 'expanded', expanded);
-                if (expanded && !this.data[index].children.length && this.async) {
-                    this.$set(this.data[index], 'loading', true);
-                    const data = await this.async(this.data[index]);
-                    this.data[index].children = data;
-                    this.$set(this.data[index], 'loading', false);
-                }
             }
         },
         setSelect(disabled, index) {
             if (!disabled) {
                 const selected = !this.data[index].selected;
 
-                if (this.multiple || !selected) {
+                if (!selected) {
                     this.$set(this.data[index], 'selected', selected);
                 } else {
                     for (let i = 0; i < this.data.length; i++) {
@@ -424,33 +392,6 @@ export default {
         },
         getSelectedNodes() {
             return this.getNodes(this.data, { selected: true });
-        },
-        getCheckedNodes() {
-            return this.getNodes(this.data, { checked: true, childrenCheckedStatus: 2 });
-        },
-        getHalfCheckedNodes() {
-            return this.getNodes(this.data, { checked: true, childrenCheckedStatus: 1 });
-        },
-        getChildrenCheckedStatus(children) {
-            let checkNum = 0;
-            let childChildrenAllChecked = true;
-
-            for (const child of children) {
-                if (child.checked) {
-                    checkNum++;
-                }
-                if (child.childrenCheckedStatus !== 2) {
-                    childChildrenAllChecked = false;
-                }
-            }
-            // 全选
-            if (checkNum === children.length) {
-                return childChildrenAllChecked ? 2 : 1;
-                // 部分选择
-            } else if (checkNum > 0) {
-                return 1;
-            }
-            return 0;
         },
         edit(path, action, data) {
             path = path.split('-');
