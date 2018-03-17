@@ -1,7 +1,7 @@
 <template>
   <div >
    <div>
-     <tree :data="dragData">
+     <tree :data="dragData" draggable>
 
      </tree>
    </div>
@@ -18,31 +18,32 @@ export default {
   data () {
     return {
       dragData: [{
-        title: '0-0',
+        text: '0-0',
         expanded: true,
         children: [{
-          title: '0-0-0',
+          text: '0-0-0',
           expanded: true,
           children: [{
-            title: '0-0-0-0',
+            text: '0-0-0-0',
+            isError:true
           }, {
-            title: '0-0-0-1',
+            text: '0-0-0-1',
           }]
         }, {
-          title: '0-0-1',
+          text: '0-0-1',
           children: [{
-            title: '0-0-1-0'
+            text: '0-0-1-0'
           }]
         }]
       }, {
-        title: '0-1',
+        text: '0-1',
         children: [{
-          title: '0-1-0'
+          text: '0-1-0'
         }, {
-          title: '0-1-2'
+          text: '0-1-2'
         }]
       }, {
-        title: '0-2',
+        text: '0-2',
       }],
     }
   }

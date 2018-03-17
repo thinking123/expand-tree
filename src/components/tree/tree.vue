@@ -1,22 +1,26 @@
 <template>
   <ul :class="treeCls">
     <li v-for="(item, index) in data" :class="{[`${prefixCls}-treenode-disabled`]: item.disabled,[dropOverCls]: dragOverIndex === index}" @dragover="dragover" @drop="drop(index,$event)" @dragenter="dragenter(index,$event)" @dragleave="dragleave(index,$event)" ref="node">
-      <span :class="[`${prefixCls}-switcher`,{[`${prefixCls}-switcher-disabled`]: item.disabled,[`${prefixCls}-switcher-noop`]: item.isLeaf,[`${prefixCls}-switcher_${item.expanded ? 'open' : 'close'}`]: !item.isLeaf}]" @click="setExpand(item.disabled, index)"></span>
 
-      <span :class="prefixCls + 'node-icon' + prefixIcon">
-          prefixIcon
+             <span :class="[`${prefixCls}-switcher`,{[`${prefixCls}-switcher-disabled`]: item.disabled,[`${prefixCls}-switcher-noop`]: item.isLeaf,[`${prefixCls}-switcher_${item.expanded ? 'open' : 'close'}`]: !item.isLeaf}]" @click="setExpand(item.disabled, index)">
+        <!--<i class="fa fa-caret-right"></i>-->
       </span>
 
-      <span :title="item.title" :class="selectHandleCls(item)" @click.prevent="setSelect(item.disabled, index)" :draggable="draggable" @dragstart="dragstart(index,$event)" @dragend="dragend"
-            v-on:dblclick="setEdit(item.disabled, index)">
-        <input type="text" v-model="item.text"  v-if="item.edited" @click.enter="completeEdit(item.disabled, index)"/>
-        <span :class="prefixCls + '-title'" v-html="item.title" v-else></span>
+        <i :class="'fa-' +  prefixIcon" class="fa">
+        </i>
+
+        <span :title="item.title" :class="selectHandleCls(item)" @click.prevent="setSelect(item.disabled, index)" :draggable="draggable" @dragstart="dragstart(index,$event)" @dragend="dragend"
+              v-on:dblclick="setEdit(item.disabled, index)">
+        <input type="text" v-model="item.text"  v-if="item.edited" @keyup.enter="completeEdit(item.disabled, index)"/>
+        <span :class="prefixCls + '-title'" v-else>{{item.text ? item.text : ''}}</span>
       </span>
 
-      <span :class="prefixCls + 'node-icon' + suffixIcon">
-        <!--<span :class="prefixCls + '-checkbox-inner'"></span>prefix-->
-        suffixIcon
-      </span>
+
+        <i :class="'fa-' +  suffixIcon" class="fa" v-if="item.isError">
+        </i>
+
+
+
 
       <transition>
         <tree v-if="!item.isLeaf" :prefix-cls="prefixCls" :data="item.children" :clue="`${clue}-${index}`" :class="`${prefixCls}-child-tree-open`" v-show="item.expanded" :draggable="draggable" ></tree>
@@ -24,6 +28,151 @@
     </li>
   </ul>
 </template>
+<style lang="less" scoped>
+  @tree-default-open-icon: "\F0DA";
+  @tree-prefix-cls:yb-tree;
+  @primary-color:#108EE9;
+  .iconfont-font(@content) {
+    font-family: 'FontAwesome';
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    content: @content;
+  }
+
+  .antTreeSwitcherIcon(@type:  "tree-default-open-icon") {
+    &:after {
+      display: inline-block;
+      .iconfont-font(@@type);
+      font-weight: bold;
+      transition: transform .3s;
+    }
+  }
+
+  .yb-tree{
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    li {
+      padding: 4px 0;
+      margin: 0;
+      list-style: none;
+      white-space: nowrap;
+      outline: 0;
+      list-style-position: outside;
+      box-sizing: border-box;
+      text-align: left;
+      span[draggable="true"] {
+        user-select: none;
+        border-top: 2px transparent solid;
+        border-bottom: 2px transparent solid;
+        margin-top: -2px;
+        /* Required to make elements draggable in old WebKit */
+        -khtml-user-drag: element;
+        -webkit-user-drag: element;
+      }
+
+      &.drag-over {
+        > span[draggable] {
+          background-color: @primary-color;
+          color: white;
+          opacity: 0.8;
+        }
+      }
+      &.drag-over-gap-top {
+        > span[draggable] {
+          border-top-color: @primary-color;
+        }
+      }
+      &.drag-over-gap-bottom {
+        > span[draggable] {
+          border-bottom-color: @primary-color;
+        }
+      }
+    }
+    ul {
+      margin: 0;
+      padding: 0 0 0 18px;
+      list-style-position: outside;
+      list-style-type: none;
+      text-size-adjust: 100%;
+    }
+    > li {
+      &:first-child {
+        padding-top: 7px;
+      }
+      &:last-child {
+        padding-bottom: 7px;
+      }
+    }
+    &-child-tree {
+      display: none;
+      &-open {
+        display: block;
+      }
+    }
+
+    .@{tree-prefix-cls}-node-content-wrapper {
+      display: inline-block;
+      padding: 3px 5px;
+      border-radius: 2px;
+      margin: 0;
+      cursor: pointer;
+      text-decoration: none;
+      vertical-align: top;
+      color: rgba(0,0,0,.65);
+      transition: all .3s;
+      position: relative;
+      &:hover {
+        background-color: #ecf6fd;;
+      }
+      &.@{tree-prefix-cls}-node-selected {
+        background-color: #d2eafb;;
+      }
+    }
+
+    li:not(:last-child):before {
+      content: ' ';
+      width: 1px;
+      border-left: 1px solid transparent;
+      height: 100%;
+      position: absolute;
+      left: 12px;
+      margin: 22px 0;
+    }
+
+    span{
+      &.@{tree-prefix-cls}-switcher {
+        margin: 0;
+        width: 24px;
+        height: 24px;
+        line-height: 24px;
+        display: inline-block;
+        vertical-align: middle;
+        border: 0 none;
+        cursor: pointer;
+        outline: none;
+        text-align: center;
+        &.@{tree-prefix-cls}-switcher-noop {
+          cursor: default;
+        }
+        &.@{tree-prefix-cls}-switcher_open {
+          .antTreeSwitcherIcon();
+          &:after {
+            transform: rotate(90deg);
+          }
+        }
+        &.@{tree-prefix-cls}-switcher_close {
+          .antTreeSwitcherIcon();
+
+        }
+      }
+    }
+
+  }
+
+
+</style>
 <script>
 import emitter from '../../mixins/emitter';
 import { getOffset } from '../../utils/fn';
@@ -35,11 +184,11 @@ export default {
       //节点的图标
       prefixIcon:{
         type:String ,
-        default:''
+        default:'address-card'
       },
       suffixIcon:{
         type:String ,
-        default:''
+        default:'exclamation'
       },
 
         prefixCls: {
@@ -71,9 +220,14 @@ export default {
     }),
     computed: {
         treeCls() {
+          if (this.clue === '0') {
             return [
-                `${this.prefixCls}-child-tree`
+              this.prefixCls
             ];
+          }
+          return [
+            `${this.prefixCls}-child-tree`
+          ];
         },
         dropOverCls() {
             let res;

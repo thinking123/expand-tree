@@ -4,6 +4,7 @@ import Vue from 'vue'
 import App from './App'
 import router from './router'
 
+import fon from '../static/font-awesome/less/font-awesome.less'
 Vue.config.productionTip = false
 
 /* eslint-disable no-new */
