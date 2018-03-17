@@ -19,7 +19,7 @@
       </span>
 
       <transition>
-        <tree v-if="!item.isLeaf" :prefix-cls="prefixCls" :data="item.children" :clue="`${clue}-${index}`" :checkable="checkable" :class="`${prefixCls}-child-tree-open`" v-show="item.expanded" :draggable="draggable" :async="async"></tree>
+        <tree v-if="!item.isLeaf" :prefix-cls="prefixCls" :data="item.children" :clue="`${clue}-${index}`" :class="`${prefixCls}-child-tree-open`" v-show="item.expanded" :draggable="draggable" ></tree>
       </transition>
     </li>
   </ul>

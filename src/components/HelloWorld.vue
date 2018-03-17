@@ -1,5 +1,5 @@
 <template>
-  <div class="hello">
+  <div >
    <div>
      <tree :data="dragData">
 
