@@ -24,6 +24,9 @@
     </li>
   </ul>
 </template>
+<style lang="less" scoped>
+
+</style>
 <script>
 import emitter from '../../mixins/emitter';
 import { getOffset } from '../../utils/fn';

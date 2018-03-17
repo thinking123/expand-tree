@@ -1,7 +1,7 @@
 <template>
   <div >
    <div>
-     <tree :data="dragData">
+     <tree :data="dragData" draggable>
 
      </tree>
    </div>
