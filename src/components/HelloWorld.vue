@@ -38,7 +38,8 @@ export default {
       }, {
         text: '0-1',
         children: [{
-          text: '0-1-0'
+          text: '0-1-0',
+          disabled:true
         }, {
           text: '0-1-2'
         }]
