@@ -1,22 +1,72 @@
 <template>
   <div >
+    <tool-panel :tools="tools">
+
+    </tool-panel>
    <div>
-     <tree :data="dragData" draggable>
+     <tree :data="dragData" draggable ref="tree">
 
      </tree>
    </div>
+    <context-menu :open="openMenu" @command="handleCommand">
+      <context-menu-item command="edit">
+        edit
+      </context-menu-item>
+      <context-menu-item command="create" divided>
+        create
+      </context-menu-item>
+      <context-menu-item command="select" disabled>
+        select
+      </context-menu-item>
+    </context-menu>
   </div>
 </template>
 
 <script>
   import tree from './tree'
+  import contextMenu from './contextmenu/contextmenu.vue'
+  import contextMenuItem from './contextmenu/context-menu-item.vue'
+  import Vue from 'vue';
+  import toolPanel from './toolanel/tool-panel.vue'
 export default {
   name: 'HelloWorld',
   components:{
-    tree
+    tree,
+    contextMenu,
+    contextMenuItem,
+    toolPanel
+  },
+  mounted(){
+    let cm = new Vue(contextMenu).$mount()
+    this.$refs.tree.$children.push(cm)
+  },
+  methods:{
+    handleCommand(command){
+      if(command == 'create'){
+
+      }
+    },
+    select(){
+      alert('sel')
+    },
+    showmenu([item ,e]){
+      this.openMenu = true
+      console.log(e)
+    },
+    edit(){
+      alert("edit")
+    }
   },
   data () {
     return {
+      tools:[
+        {icon:'fa-square-o' , text:'Box'},
+        {icon:'fa-text-width' , text:'text'},
+        {icon:'fa-picture-o' , text:'Image'},
+        {icon:'fa-bandcamp' , text:'Icons'},
+        {icon:'fa-columns' , text:'Slot'},
+      ],
+      openMenu:false,
       dragData: [{
         text: '0-0',
         expanded: true,

@@ -1,4 +1,4 @@
-<template lang="html">
+<template>
     <transition name="fade" enter-class="fade-in-enter" leave-class="fade-out-enter">
         <ul ref="list"
             class="ant-dropdown-menu ant-dropdown-menu-vertical"
@@ -25,7 +25,7 @@
     </transition>
 </template>
 
-<script lang="babel">
+<script>
     import emitter from '../../mixins/emitter';
 
     const Trigger = ['click', 'hover'];

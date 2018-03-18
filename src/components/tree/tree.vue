@@ -3,13 +3,13 @@
     <li v-for="(item, index) in data"
         :class="{[`${prefixCls}-treenode-disabled`]: item.disabled,[dropOverCls]: dragOverIndex === index}"
         @dragover="dragover" @drop="drop(index,$event)" @dragenter="dragenter(index,$event)"
-        @dragleave="dragleave(index,$event)" ref="node" @click.prevent="setExpand(item.disabled, index,$event)"  v-on:contextmenu="handleMenu(item.disabled , index , $event)">
+        @dragleave="dragleave(index,$event)" ref="node" @click.prevent="setExpand(item.disabled, index,$event)"  >
 
       <i :class="getPrefixIcon(item)">
       </i>
 
       <span :title="item.title" :class="selectHandleCls(item)" :draggable="draggable"
-            @dragstart="dragstart(index,$event)" @dragend="dragend">
+            @dragstart="dragstart(index,$event)" @dragend="dragend" v-on:contextmenu="handleMenu(item.disabled , index , $event)">
         <input type="text" v-model="item.text" v-if="item.edited" @keyup.enter="completeEdit(item.disabled, index)"/>
         <span :class="prefixCls + '-title'" v-else>{{item.text ? item.text : ''}}</span>
       </span>
@@ -24,6 +24,9 @@
               :class="`${prefixCls}-child-tree-open`" v-show="item.expanded" :draggable="draggable"></tree>
       </transition>
     </li>
+    <!--<dropdown v-if="clue === '0'" :data="menuData" :popupContainer="getDropdownContainer">-->
+      <!---->
+    <!--</dropdown>-->
   </ul>
 </template>
 <style lang="less" scoped>
@@ -173,11 +176,17 @@
 <script>
   import emitter from '../../mixins/emitter';
   import {getOffset} from '../../utils/fn';
+  import contextMenu from '../contextmenu/contextmenu.vue'
 
+//  import dropdown from './dropdown'
   export default {
     name: 'Tree',
     mixins: [emitter],
     props: {
+      menuData:{
+        type:Array,
+        default:()=>[{content:'edit'}]
+      },
       //节点的图标
       prefixIcon: {
         type: String,
@@ -214,6 +223,7 @@
       dragOverIndex: -1,
       dropPosition: 0,
       dragCrossSameTree: false,
+      contextMenu:null
     }),
     computed: {
       treeCls() {
@@ -252,7 +262,7 @@
     mounted() {
       this.setKey();
       this.preHandle();
-
+      this.setContextMenu();
       this.$on('nodeSelected', (params) => {
         if (this.clue !== '0') return this.dispatch('Tree', 'nodeSelected', params);
         if (params.status) {
@@ -410,15 +420,65 @@
         ev.stopPropagation();
         this.dragOverIndex = -1;
         const dragClue = ev.dataTransfer.getData('dragClue');
+        const dragTool = ev.dataTransfer.getData('dragTool');
         const selfClue = `${this.clue}-${index}`;
 
-        // 如果拖拽的对象不是自己的父辈级
-        if (!selfClue.startsWith(dragClue)) {
-          if (this.clue === '0') {
-            this.$emit('dragdrop', dragClue, selfClue, this.dropPosition);
-          } else {
-            this.dispatch('Tree', 'dragdrop', [dragClue, selfClue, this.dropPosition]);
+        if(dragTool){
+          this.insertNewNode(dragTool, selfClue, this.dropPosition);
+        }else{
+          // 如果拖拽的对象不是自己的父辈级
+          if (!selfClue.startsWith(dragClue)) {
+            if (this.clue === '0') {
+              this.$emit('dragdrop', dragClue, selfClue, this.dropPosition);
+            } else {
+              this.dispatch('Tree', 'dragdrop', [dragClue, selfClue, this.dropPosition]);
+            }
           }
+        }
+
+      },
+      insertNewNode(tool, targetClue, dropPosition){
+
+
+        targetClue = targetClue.split('-');
+        let _sourceData = {text:tool.text}
+        let targetData = this.data;
+        const targetIndex = targetClue[targetClue.length - 1] * 1;
+
+        for (let i = 1; i < targetClue.length - 1; i++) {
+          const index = targetClue[i];
+          if (i === 1) {
+            targetData = targetData[index];
+          } else {
+            targetData = targetData.children[index];
+          }
+        }
+
+//          dropPosition的值有-1(插入到目标节点前面),0(插入到目标节点里面),1(插入到目标节点后面)
+        switch (dropPosition) {
+          case 0:
+            if (targetClue.length > 2) {
+              targetData = targetData.children[targetIndex];
+            } else {
+              targetData = targetData[targetIndex];
+            }
+            if (targetData.children) {
+              targetData.children.push(_sourceData);
+            } else {
+              this.$set(targetData, 'children', [_sourceData]);
+            }
+            break;
+          case 1:
+          case -1:
+            const p = targetIndex + (dropPosition === -1 ? 0 : dropPosition);
+            if (targetClue.length > 2) {
+              targetData.children.splice(p, 0, _sourceData);
+            } else {
+              targetData.splice(p, 0, _sourceData);
+            }
+            break;
+//                case -1:
+          default:
         }
       },
       dragenter(index, ev) {
@@ -487,6 +547,23 @@
           this.data[i].clue = `${this.clue}-${i}`;
         }
       },
+      setContextMenu(){
+
+        this.contextMenu = this.getContextMenu();
+        console.log('context : ' , this.contextMenu)
+      },
+      getContextMenu(){
+        let parent = this.$parent || this.$root;
+        let name = parent.$options.name;
+        let componentName = 'yb-context-menu'
+        while (parent) {
+          if(parent.$children.length == 2 && parent.$children[1].$options.name === componentName){
+            return parent.$children[1]
+          }
+          parent = parent.$parent;
+        }
+        return null
+      },
       preHandle() {
         for (const [i, item] of this.data.entries()) {
           if (!item.children) {
@@ -497,12 +574,23 @@
           this.$set(item, 'isLeaf', false);
         }
       },
-      handleMenu(disabled, index , $event) {
-        $event.preventDefault()
-        $event.stopPropagation()
-        console.log('menu')
-        if(disabled){
+      handleMenu(disabled, index , e) {
+        e.preventDefault()
+        e.stopPropagation()
 
+        if(!disabled && !!this.contextMenu){
+
+          this.contextMenu.isVisible = true;
+          this.contextMenu.x = e.clientX;
+          this.contextMenu.y = e.clientY;
+          this.contextMenu.callBack = this.callBack
+          this.contextMenu.context = index
+        }
+      },
+      callBack(command , index){
+        if(command == 'edit'){
+          console.log('edit menu')
+          this.setEdit(false , index)
         }
       },
       setExpand(disabled, index , $event) {

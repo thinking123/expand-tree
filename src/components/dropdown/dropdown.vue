@@ -1,6 +1,5 @@
-<template lang="html">
+<template>
     <div ref="dropdown" style="display:inline-block;">
-        <slot></slot>
         <transition name="slide-up">
             <div ref="content"
                  :class="`ant-dropdown ant-dropdown-placement-${placement}`"
@@ -11,8 +10,12 @@
         </transition>
     </div>
 </template>
-
-<script lang="babel">
+<style lang="less" scoped>
+  .yb-drop-down{
+    position: fixed;
+  }
+</style>
+<script>
     import dropdownMenu from './dropdown-menu';
     import { getOffset } from '../../utils/fn';
     import emitter from '../../mixins/emitter';
@@ -30,6 +33,10 @@
             isOpen: false,
         }),
         props: {
+            position:{
+              type:Object,
+              default:{}
+            },
             popupContainer: {
                 type: Function,
                 default: () => document.body,
@@ -85,6 +92,7 @@
             document.removeEventListener('click', this.close);
         },
         methods: {
+          getPosition(){},
             setPosition() {
                 if (!this.$el) {
                     return;
